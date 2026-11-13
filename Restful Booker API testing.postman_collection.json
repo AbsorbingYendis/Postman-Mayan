@@ -1,0 +1,286 @@
+{
+  "info": {
+    "_postman_id": "a26ce057-09ad-4100-85ee-532129b8bbf2",
+    "name": "Restful Booker API testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "60168509",
+    "_collection_link": "https://go.postman.co/collection/60168509-a26ce057-09ad-4100-85ee-532129b8bbf2?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "01 authentication",
+      "item": [
+        {
+          "name": "TC01-Generate Authentication Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Parse the API response\r\nconst response = pm.response.json();\r\n\r\n// TEST 1: Validate HTTP status code\r\npm.test(\"TC01 - Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\n// TEST 2: Validate response content type\r\npm.test(\"TC01 - Response is JSON\", () => {\r\n    pm.response.to.be.json;\r\n});\r\n\r\n// TEST 3: Validate token existence\r\npm.test(\"TC01 - Authentication token exists\", () => {\r\n    pm.expect(response).to.have.property(\"token\");\r\n    pm.expect(response.token).to.be.a(\"string\").and.not.empty;\r\n});\r\n\r\n// TEST 4: Save token for subsequent requests\r\nif (response.token) {\r\n    pm.collectionVariables.set(\"token\", response.token);\r\n}\r\n\r\n// TEST 5: Validate token was saved\r\npm.test(\"TC01 - Token saved successfully\", () => {\r\n    pm.expect(pm.collectionVariables.get(\"token\"))\r\n        .to.eql(response.token);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"admin\",\r\n    \"password\": \"password123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC02 - Invalid Authentication Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Parse API response\r\nconst response = pm.response.json();\r\n\r\n// TEST 1: Validate HTTP status\r\npm.test(\"TC02 - Returns HTTP 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\n// TEST 2: Validate error message\r\npm.test(\"TC02 - Invalid credentials are rejected\", () => {\r\n    pm.expect(response.reason).to.eql(\"Bad credentials\");\r\n});\r\n\r\n// TEST 3: Verify no authentication token\r\npm.test(\"TC02 - No authentication token is generated\", () => {\r\n    pm.expect(response.token).to.be.undefined;\r\n});\r\n\r\n// TEST 4: Verify response structure\r\npm.test(\"TC02 - Response contains error information\", () => {\r\n    pm.expect(response).to.have.property(\"reason\");\r\n    pm.expect(response.reason).to.be.a(\"string\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"invalid_user\",\r\n    \"password\": \"wrong_password\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02-Booking",
+      "item": [
+        {
+          "name": "TC03 - GET BOOKING",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  " const response = pm.response.json();\r\n\r\n// 1. Validate the response status\r\npm.test(\"TC03 - Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\n// 2. Validate the response structure\r\nconst schema = {\r\n    type: \"object\",\r\n    required: [\"bookingid\", \"booking\"],\r\n    properties: {\r\n        bookingid: {\r\n            type: \"number\"\r\n        },\r\n        booking: {\r\n            type: \"object\",\r\n            required: [\r\n                \"firstname\",\r\n                \"lastname\",\r\n                \"totalprice\",\r\n                \"depositpaid\",\r\n                \"bookingdates\"\r\n            ]\r\n        }\r\n    }\r\n};\r\n\r\npm.test(\"TC03 - Response matches JSON schema\", () => {\r\n    pm.response.to.have.jsonSchema(schema);\r\n});\r\n\r\n// 3. Validate the booking details\r\npm.test(\"TC03 - Booking details are correct\", () => {\r\n    pm.expect(response.booking.firstname).to.eql(\"Sidney\");\r\n    pm.expect(response.booking.lastname).to.eql(\"Ramirez\");\r\n    pm.expect(response.booking.totalprice).to.eql(1500);\r\n    pm.expect(response.booking.depositpaid).to.eql(true);\r\n});\r\n\r\n// 4. Validate that a booking ID was generated\r\npm.test(\"TC03 - Booking ID is generated\", () => {\r\n    pm.expect(response.bookingid).to.be.a(\"number\");\r\n});\r\n\r\n// 5. Save the booking ID for the next requests\r\npm.collectionVariables.set(\"bookingid\", response.bookingid);\r\n\r\npm.test(\"TC03 - Booking ID saved successfully\", () => {\r\n    pm.expect(pm.collectionVariables.get(\"bookingid\"))\r\n        .to.eql(response.bookingid);\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"firstname\": \"Sidney\",\r\n  \"lastname\": \"Ramirez\",\r\n  \"totalprice\": 1500,\r\n  \"depositpaid\": true,\r\n  \"bookingdates\": {\r\n    \"checkin\": \"2026-12-01\",\r\n    \"checkout\": \"2026-12-05\"\r\n  },\r\n  \"additionalneeds\": \"Breakfast\"\r\n}\r\n",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/booking",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC04 - Update Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\n\r\n// 1. Validate status code\r\npm.test(\"TC04 - Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\n// 2. Validate response structure\r\nconst schema = {\r\n    type: \"object\",\r\n    required: [\r\n        \"firstname\",\r\n        \"lastname\",\r\n        \"totalprice\",\r\n        \"depositpaid\",\r\n        \"bookingdates\",\r\n        \"additionalneeds\"\r\n    ],\r\n    properties: {\r\n        firstname: { type: \"string\" },\r\n        lastname: { type: \"string\" },\r\n        totalprice: { type: \"number\" },\r\n        depositpaid: { type: \"boolean\" },\r\n        bookingdates: {\r\n            type: \"object\",\r\n            required: [\"checkin\", \"checkout\"]\r\n        },\r\n        additionalneeds: { type: \"string\" }\r\n    }\r\n};\r\n\r\npm.test(\"TC04 - Response matches JSON schema\", () => {\r\n    pm.response.to.have.jsonSchema(schema);\r\n});\r\n\r\n// 3. Validate updated booking details\r\npm.test(\"TC04 - Booking details were updated\", () => {\r\n    pm.expect(response.firstname).to.eql(\"Sidney Updated\");\r\n    pm.expect(response.lastname).to.eql(\"Ramirez\");\r\n    pm.expect(response.totalprice).to.eql(2000);\r\n    pm.expect(response.depositpaid).to.eql(true);\r\n    pm.expect(response.additionalneeds)\r\n        .to.eql(\"Breakfast and Airport Pickup\");\r\n});\r\n\r\n// 4. Validate booking dates\r\npm.test(\"TC04 - Booking dates are correct\", () => {\r\n    pm.expect(response.bookingdates.checkin)\r\n        .to.eql(\"2026-12-01\");\r\n\r\n    pm.expect(response.bookingdates.checkout)\r\n        .to.eql(\"2026-12-05\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "token={{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"firstname\": \"Sidney Updated\",\r\n  \"lastname\": \"Ramirez\",\r\n  \"totalprice\": 2000,\r\n  \"depositpaid\": true,\r\n  \"bookingdates\": {\r\n    \"checkin\": \"2026-12-01\",\r\n    \"checkout\": \"2026-12-05\"\r\n  },\r\n  \"additionalneeds\": \"Breakfast and Airport Pickup\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/booking/ {{bookingid}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                " {{bookingid}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC05-Verify Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const response = pm.response.json();\r\n\r\n// 1. Validate status code\r\npm.test(\"TC05 - Status code is 200\", () => {\r\n    pm.response.to.have.status(200);\r\n});\r\n\r\n// 2. Validate response schema\r\nconst schema = {\r\n    type: \"object\",\r\n    required: [\r\n        \"firstname\",\r\n        \"lastname\",\r\n        \"totalprice\",\r\n        \"depositpaid\",\r\n        \"bookingdates\",\r\n        \"additionalneeds\"\r\n    ],\r\n    properties: {\r\n        firstname: { type: \"string\" },\r\n        lastname: { type: \"string\" },\r\n        totalprice: { type: \"number\" },\r\n        depositpaid: { type: \"boolean\" },\r\n        bookingdates: {\r\n            type: \"object\",\r\n            required: [\"checkin\", \"checkout\"]\r\n        },\r\n        additionalneeds: { type: \"string\" }\r\n    }\r\n};\r\n\r\npm.test(\"TC05 - Response matches JSON schema\", () => {\r\n    pm.response.to.have.jsonSchema(schema);\r\n});\r\n\r\n// 3. Verify the updated values from TC04\r\npm.test(\"TC05 - Updated booking details are persisted\", () => {\r\n    pm.expect(response.firstname).to.eql(\"Sidney Updated\");\r\n    pm.expect(response.lastname).to.eql(\"Ramirez\");\r\n    pm.expect(response.totalprice).to.eql(2000);\r\n    pm.expect(response.depositpaid).to.eql(true);\r\n    pm.expect(response.additionalneeds)\r\n        .to.eql(\"Breakfast and Airport Pickup\");\r\n});\r\n\r\n// 4. Verify booking dates\r\npm.test(\"TC05 - Booking dates are correct\", () => {\r\n    pm.expect(response.bookingdates.checkin)\r\n        .to.eql(\"2026-12-01\");\r\n\r\n    pm.expect(response.bookingdates.checkout)\r\n        .to.eql(\"2026-12-05\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "token={{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"firstname\": \"Sidney Updated\",\r\n  \"lastname\": \"Ramirez\",\r\n  \"totalprice\": 2000,\r\n  \"depositpaid\": true,\r\n  \"bookingdates\": {\r\n    \"checkin\": \"2026-12-01\",\r\n    \"checkout\": \"2026-12-05\"\r\n  },\r\n  \"additionalneeds\": \"Breakfast and Airport Pickup\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/booking/ {{bookingid}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                " {{bookingid}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "TC06-Delete Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 1. Validate successful deletion\r\npm.test(\"TC06 - Status code is 201\", () => {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\n// 2. Validate response message\r\npm.test(\"TC06 - Booking deletion confirmation\", () => {\r\n    pm.expect(pm.response.text()).to.eql(\"Created\");\r\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "token={{token}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/booking/{{bookingid}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "booking",
+                "{{bookingid}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": ""
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "bookingid",
+      "value": ""
+    }
+  ]
+}
